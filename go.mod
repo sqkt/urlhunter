@@ -1,4 +1,4 @@
-module github.com/utkusen/urlhunter
+module github.com/sqkt/urlhunter
 
 go 1.15
 
