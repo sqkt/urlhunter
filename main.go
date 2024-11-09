@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -61,6 +62,7 @@ Example: ./urlhunter --keywords keywords.txt --date 2020-11-20 --output out.txt
 
 var err error
 var archivesPath string
+var proxyURL string
 
 func main() {
 	var keywordFile string
@@ -75,6 +77,8 @@ func main() {
 	flag.StringVar(&outFile, "output", "", "Output file")
 	flag.StringVar(&archivesPath, "a", "archives", "Archives file path")
 	flag.StringVar(&archivesPath, "archives", "archives", "Archives file path")
+	flag.StringVar(&proxyURL, "p", "", "Proxy URL to use for network requests")
+	flag.StringVar(&proxyURL, "proxy", "", "Proxy URL to use for network requests")
 
 	//https://www.antoniojgutierrez.com/posts/2021-05-14-short-and-long-options-in-go-flags-pkg/
 	flag.Usage = func() { fmt.Print(usage) }
@@ -127,7 +131,8 @@ func main() {
 }
 
 func getArchiveList() []byte {
-	resp, err := http.Get(baseurl)
+	client := createHTTPClient(proxyURL)
+	resp, err := client.Get(baseurl)
 	if err != nil {
 		panic(err)
 	}
@@ -448,4 +453,17 @@ func crash(message string, err error) {
 
 func warning(message string) {
 	color.Yellow("[WARNING]: " + message + "\n")
+}
+
+// createHTTPClient creates an HTTP client with optional proxy support
+func createHTTPClient(proxy string) *http.Client {
+	transport := &http.Transport{}
+	if proxy != "" {
+		proxyURL, err := url.Parse(proxy)
+		if err != nil {
+			panic(err)
+		}
+		transport.Proxy = http.ProxyURL(proxyURL)
+	}
+	return &http.Client{Transport: transport}
 }
